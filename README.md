@@ -17,8 +17,8 @@ Available at: http://arxiv.org/abs/1503.06432
 
 C. Guarnizo, M. A. Álvarez and A. A. Orozco, "Indian Buffet Process for Model Selection in Latent Force Models",
 Progress in Pattern Recognition, Image Analysis, Computer Vision, and Applications: 20th Iberoamerican Congress, CIARP 2015, Montevideo, Uruguay, November 9-12, 2015, 635-642.
-Availabel at: http://link.springer.com/chapter/10.1007%2F978-3-319-25751-8_76
+Available at: http://link.springer.com/chapter/10.1007%2F978-3-319-25751-8_76
 
 ### ACKNOWLEDGEMENTS
 
-Thanks to
+Thanks to the support from British Council and Colciencias under the research project “Sparse Latent Force Models for Reverse Engineering of Multiple Transcription Factors”.
