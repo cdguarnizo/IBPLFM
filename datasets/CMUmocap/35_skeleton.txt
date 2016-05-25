@@ -1,0 +1,31 @@
+root Xposition Yposition Zposition Xrotation Yrotation Zrotation
+lhipjoint
+lfemur Xrotation Yrotation Zrotation
+ltibia Xrotation
+lfoot Xrotation Zrotation
+ltoes Xrotation
+rhipjoint
+rfemur Xrotation Yrotation Zrotation
+rtibia Xrotation
+rfoot Xrotation Zrotation
+rtoes Xrotation
+lowerback Xrotation Yrotation Zrotation
+upperback Xrotation Yrotation Zrotation
+thorax Xrotation Yrotation Zrotation
+lowerneck Xrotation Yrotation Zrotation
+upperneck Xrotation Yrotation Zrotation
+head Xrotation Yrotation Zrotation
+lclavicle Yrotation Zrotation
+lhumerus Xrotation Yrotation Zrotation
+lradius Xrotation
+lwrist Yrotation
+lhand Xrotation Zrotation
+lfingers Xrotation
+lthumb Xrotation Zrotation
+rclavicle Yrotation Zrotation
+rhumerus Xrotation Yrotation Zrotation
+rradius Xrotation
+rwrist Yrotation
+rhand Xrotation Zrotation
+rfingers Xrotation
+rthumb Xrotation Zrotation
