@@ -1,5 +1,5 @@
 # IBPLFM: Indian Buffet Process for Latent Force Models
-By Cristian Guarnizo (cdguarnizo@utpd.edu.co) and Mauricio A. Álvarez (malvarez@utp.edu.co)
+By Cristian Guarnizo (cdguarnizo@utp.edu.co) and Mauricio A. Álvarez (malvarez@utp.edu.co)
 
 ## Description
 This code uses GPmat framework to calculate covariance functions
