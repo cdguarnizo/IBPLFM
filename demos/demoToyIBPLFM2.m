@@ -22,6 +22,7 @@ end
 clear fd xTemp
 
 %% Set IBPLFM Options 
+options = ibpmultigpOptions('dtcvar');
 options.kernType = 'lfm';
 options.optimiser = 'scg';
 options.fixinducing = true;
