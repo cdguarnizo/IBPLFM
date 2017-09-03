@@ -27,7 +27,7 @@ if strcmp(kern.approx,'ftc'),
                 for dp = d+1:kern.nout,
                     kernOut2.decay = kern.decay(dp);
                     kernOut2.sensitivity = kern.sensitivity(dp,q);
-                    Kfft{d,dp} = real(kern.funcNames.computeCross(kernOut, kernOut2, outX{d}, outX{dp}));
+                    Kfft{d,dp} = real(kern.funcNames.computeCrossOut(kernOut, kernOut2, outX{d}, outX{dp}));
                     Kfft{dp,d} = Kfft{d,dp}.';
                 end
             end
@@ -77,23 +77,28 @@ else
             Kuu{k} = Kuu{k} + gamma(k)*eye(size(Kuu{k}));
         end
     end
-    for i = 1:kern.nout,
+
+    for d = 1:kern.nout,
         %Here expand spring and damper
-        kernOut.decay = kern.decay(i);
-        for j = 1:kern.nlf,
-            kernOut.sensitivity = kern.sensitivity(i,j);
+        kernOut.decay = kern.decay(d);
+        for q = 1:kern.nlf,
+            kernOut.sensitivity = kern.sensitivity(d,q);
             % Expand the parameter inverseWidth
-            kernOut.inverseWidth = kern.inverseWidth(j);
-            kernLat.inverseWidth =  kern.inverseWidth(j);
+            kernOut.inverseWidth = kern.inverseWidth(q);
+            kernLat.inverseWidth = kern.inverseWidth(q);
             % Compute Kff
-            Kff{i,j} = real(kern.funcNames.computeOut(kernOut, outX{i}));
+            Kff{d,q} = real(kern.funcNames.computeOut(kernOut, outX{d}));
             
-            if any(isnan(Kff{i,j})),
-                error('Nan in Kff')
+            if any(isinf(Kff{d,q})) | any(isnan(Kff{d,q})),
+                error('Nan or Inf in Kff')
             end
             
-            % Compute Kfu, which corresponds to K_{\hat{f}}u, really.
-            Kfu{i,j} = real(kern.funcNames.computeCross(kernOut, kernLat, outX{i}, latX{j}));
+            % Compute Kfu, which corresponds to K_{\hat{f}}u
+            Kfu{d,q} = real(kern.funcNames.computeCross(kernOut, kernLat, outX{d}, latX{q}));
+            
+            if any(isinf(Kfu{d,q})) | any(isnan(Kfu{d,q})),
+                error('Nan or Inf in Kfu')
+            end
         end
     end
 end

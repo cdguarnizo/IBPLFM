@@ -62,8 +62,14 @@ end
 kern.transforms.index = 1:kern.nParams;
 if ~kern.isVarS,
     %kern.diffParams = 2;
-    kern.transforms.index = 1:kern.nParams;
-    kern.nParams = kern.nParams + kern.nout*kern.nlf;
+    if  isfield(kern, 'options') && isfield(kern.options, 'PosS') ...
+            && kern.options.PosS,
+        kern.nParams = kern.nParams + kern.nout*kern.nlf;
+        kern.transforms.index = 1:kern.nParams;
+    else
+        kern.transforms.index = 1:kern.nParams;
+        kern.nParams = kern.nParams + kern.nout*kern.nlf;
+    end
 end
 kern.transforms.type = optimiDefaultConstraint('positive');
 kern.isStationary = false;

@@ -40,7 +40,8 @@ end
 if isfield(kern, 'options') && isfield(kern.options, 'tieOutputParams'),
     kern.tieOutputParams = kern.options.tieOutputParams;
     if kern.options.tieOutputParams
-        kern.inverseWidth = 1./(1 + .5*randn(1, kern.nlf)).^5;
+        %kern.inverseWidth = 2./(1 + .5*randn(1, kern.nlf)).^2;
+        kern.inverseWidth = 2./(2:2-.5/kern.nlf:.1).^2;
         kern.mass = ones(1, kern.nout);
         kern.spring = ones(1, kern.nout);
         kern.damper = ones(1, kern.nout);
@@ -54,10 +55,10 @@ if isfield(kern, 'options') && isfield(kern.options, 'tieOutputParams'),
     end
 else
     kern.tieOutputParams = true;
-    kern.inverseWidth = 1./rand(1, kern.nlf);
+    kern.inverseWidth = 2./(.5 + rand(1, kern.nlf)).^2;
     kern.mass = ones(1, kern.nout);
-    kern.spring = ones(1, kern.nout);
-    kern.damper = ones(1, kern.nout);
+    kern.spring = rand(1, kern.nout);
+    kern.damper = rand(1, kern.nout);
     if kern.incMass,
         kern.nParams = kern.nlf + 3*kern.nout;
         kern.ParamsperOut = 3;

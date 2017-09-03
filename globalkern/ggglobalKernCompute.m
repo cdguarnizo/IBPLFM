@@ -23,7 +23,7 @@ if strcmp(kern.approx,'ftc'),
             for dp = d+1:kern.nout,
                 kernOut2.precisionG = kern.precisionG(dp);
                 kernOut2.sensitivity = kern.sensitivity(dp,q);
-                Kfft{d,dp} = real(kern.funcNames.computeCross(kernOut, kernOut2, outX{d}, outX{dp}));
+                Kfft{d,dp} = real(kern.funcNames.computeCrossOut(kernOut, kernOut2, outX{d}, outX{dp}));
                 Kfft{dp,d} = Kfft{d,dp}.';
             end
         end
@@ -54,18 +54,26 @@ else
             end
         end
     end
-    for i = 1:kern.nout,
+    for d = 1:kern.nout,
         % Expand the parameter decay
-        kernOut.precisionG = kern.precisionG(i);
-        for j = 1:kern.nlf,
-            kernOut.sensitivity = kern.sensitivity(i,j);
+        kernOut.precisionG = kern.precisionG(d);
+        for q = 1:kern.nlf,
+            kernOut.sensitivity = kern.sensitivity(d,q);
             % Expand the parameter inverseWidth
-            kernOut.precisionU = kern.precisionU(j);
-            kernLat.precisionU = kern.precisionU(j);
+            kernOut.precisionU = kern.precisionU(q);
+            kernLat.precisionU = kern.precisionU(q);
             % Compute Kff
-            Kff{i,j} = real(kern.funcNames.computeOut(kernOut, outX{i}));
+            Kff{d,q} = real(kern.funcNames.computeOut(kernOut, outX{d}));
+            
+            if any(isnan(Kff{d,q})) | any(isinf(Kff{d,q})),
+                error('Nan or Inf in Kff')
+            end
             % Compute Kfu, which corresponds to K_{\hat{fu}}, really.
-            Kfu{i,j} = real(kern.funcNames.computeCross(kernOut, kernLat, outX{i}, latX{j}));
+            Kfu{d,q} = real(kern.funcNames.computeCross(kernOut, kernLat, outX{d}, latX{q}));
+            
+            if any(isnan(Kfu{d,q})) | any(isinf(Kfu{d,q})),
+                error('Nan or Inf in Kfu')
+            end
         end
     end
 end

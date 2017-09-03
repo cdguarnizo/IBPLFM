@@ -19,9 +19,13 @@ if kern.isArd,
 else
     nParamsLat = kern.nlf;
     kern.precisionU = reshape(params(1:nParamsLat), 1, kern.nlf);
+    %kern.precisionU(kern.precisionU<1e-2) = 1e-2;
+    %kern.precisionU(kern.precisionU>200) = 200;
     
     nParamsOut = kern.nout;
     kern.precisionG = reshape(params(nParamsLat+1:nParamsLat+nParamsOut), 1, kern.nout);
+    %kern.precisionG(kern.precisionG < 1e-2) = 1e-2;
+    %kern.precisionG(kern.precisionG > 200) = 200;
 end
 
 if ~(isfield(kern.options, 'isVarS') && kern.options.isVarS),

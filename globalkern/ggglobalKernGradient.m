@@ -23,7 +23,7 @@ if strcmp(kern.approx,'ftc'),
             for dp = d+1:kern.nout,
                 kernOut2.precisionG = kern.precisionG(dp);
                 kernOut2.sensitivity = kern.sensitivity(dp,q);
-                [g1, g2] = kern.funcNames.gradientCross(kernOut, kernOut2, outX{d}, outX{dp}, dLdKyy{d,dp}); %Kyygradient
+                [g1, g2] = kern.funcNames.gradientCrossOut(kernOut, kernOut2, outX{d}, outX{dp}, dLdKyy{d,dp}); %Kyygradient
                 %Add gradients
                 gParam(ind) = gParam(ind) + g1([1,2,4]); % PrecisionU PrecisionG Sensitivity
                 ind2 = [kern.nlf + dp, kern.nlf + kern.nout + dp + (q-1)*kern.nout];

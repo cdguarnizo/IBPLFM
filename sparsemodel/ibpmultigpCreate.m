@@ -5,8 +5,8 @@ function model = ibpmultigpCreate(X, y, options )
 % Sparse models, where sparcity is induced over the sensitivities of
 % convolved Gaussian Processes.
 % Inputs:
-% X: Input data
-% y: Output data
+% X: Input data (cell type)
+% y: Output data (cell typ)
 % Options: Definition of flag variables and type of inference.
 % IBPMULTIGP
 
@@ -28,11 +28,17 @@ model.ndim = size(X{1},2);
 model.nlf = options.nlf;
 model.approx = options.approx;
 model.optimiser = options.optimiser;
-model.fixinducing = options.fixinducing;
+model.fixInducing = options.fixInducing;
 model.sparsePriorType = options.sparsePriorType;
 model.IBPisInfinite = options.IBPisInfinite;
 model.Opteta = options.Opteta;
 model.isVarU = options.isVarU;
+model.force_posUpdate = options.force_posUpdate;
+model.minJit = 1.;
+
+if isfield(options,'OptMarU'),
+    model.OptMarU = options.OptMarU;
+end
 
 if isfield(options, 'scale') && ~isempty(options.scale)
     model.scale = options.scale;
@@ -100,7 +106,7 @@ switch model.approx
                     posX = X{1}(options.fixIndices,:);
                 case 'kmeansIsotopic'
                     posX = kmeanlbg(X{1},numActive);
-                case 'kmeansHeterotopic' 
+                case 'kmeansHeterotopic'
                     totX = cell2mat(X);
                     posX = kmeanlbg(totX, numActive);
                 otherwise
@@ -108,12 +114,28 @@ switch model.approx
             end
             model.latX{i} = posX;
         end
-        for i = 1:length(y)
-            model.outX{i} = X{i}; %TODO check this for multivariate input
-            model.y{i} = y{i};
-        end
+        %         for i = 1:length(y)
+        %             model.outX{i} = X{i}; %TODO check this for multivariate input
+        %             model.y{i} = y{i};
+        %         end
     otherwise
         error('Unknown model approximation')
+end
+
+% Substract the mean
+model.y = y;
+model.outX = X;
+model.m = cell(model.nout,1);
+model.md2 = zeros(model.nout,1);
+for d = 1:model.nout,
+    model.m{d} = model.y{d};
+    if model.bias(d)~=0.,
+        model.m{d} = model.m{d} - model.bias(d);
+    end
+    if model.scale(d)~=1.,
+        model.m{d} = model.m{d}/model.scale(d);
+    end
+    model.md2(d) = sum(model.m{d}.^2);
 end
 
 model.tieIndices = options.tieOptions.tieIndices;
@@ -125,6 +147,7 @@ model.includeNoise = options.includeNoise;
 model.indXu = [];
 for q = 1:model.nlf,
     model.indXu = [model.indXu q*ones(1, size(model.latX{q},1))];
+    model.sizeXu(q) = size(model.latX{q},1);
 end
 
 model.indX = [];
@@ -167,6 +190,10 @@ if strcmp('lfm', options.kernType),
     kern.options.incMass = false;
 end
 
+if isfield(options,'PosS') && options.PosS,
+    kern.options.PosS = options.PosS;
+end
+
 %kern.options.order = options.kern.order;
 kern = kernParamInit(kern);
 kernType = multigpKernComposer(options.kernType, 1, 1, model.approx, 1, options);
@@ -176,7 +203,7 @@ kern.funcNames.computeLat = str2func([kernType{2}{3}  'KernCompute']);
 kern.funcNames.computeOut = str2func([kernType{3}{3}  'KernDiagCompute']);
 kern.funcNames.computeCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernCompute']);
 kern.funcNames.gradientLat = str2func([kernType{2}{3} 'KernGradient']);
-kern.funcNames.gradientOut = str2func([kernType{3}{3} 'KernGradient']);
+kern.funcNames.gradientOut = str2func([kernType{3}{3} 'KernDiagGradient']);
 kern.funcNames.gradientCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernGradient']);
 kern.funcNames.extractLat = str2func([kernType{2}{3} 'KernExtractParam']);
 kern.funcNames.extractOut = str2func([kernType{3}{3} 'KernExtractParam']);
@@ -212,7 +239,7 @@ if isfield(options, 'meanFunction') && ~isempty(options.meanFunction)
 end
 
 % Create noise model
-switch model.approx
+switch model.approx,
     case {'fitc','pitc', 'dtcvar'}
         % In this structure is easier to put noise in the latent functions
         % at the top level
@@ -257,6 +284,14 @@ if options.Opteta,
     model.etadqvec = reshape(model.etadq,1,model.nout*model.nlf);
     model.etadqTransform = 'logit';
     model.nParams = model.nParams + model.nout*model.nlf;
+end
+
+if isfield(options,'UseMeanConstants') && options.UseMeanConstants,
+    model.UseMeanConstants = 1;
+    model.mu = zeros(model.nout,1);
+    model.nParams = model.nParams + model.nout;
+else
+    model.UseMeanConstants = 0;
 end
 
 params = modelExtractParam(model);

@@ -141,7 +141,6 @@ while (j <= niters)
     end
     sigma = sigma0/sqrt(kappa);
     xplus = x + sigma*d;
-    
     gplus = feval(gradf, xplus, varargin{:}); %Evaluate gradf
     options(11) = options(11) + 1; 
     theta = (d*(gplus' - gradnew'))/sigma;
@@ -181,7 +180,7 @@ while (j <= niters)
     if nargout >= 4
       pointlog(j,:) = x;	% Current position
       if nargout >= 5
-	scalelog(j) = beta;	% Current scale parameter
+        scalelog(j) = beta;	% Current scale parameter
       end
     end
   end    
@@ -247,6 +246,6 @@ end
 
 options(8) = fold;
 if (options(1) >= 0)
-  disp(maxitmess);
+  disp('Maximum number of interations.');
 end
 

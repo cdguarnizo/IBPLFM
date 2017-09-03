@@ -8,7 +8,7 @@ function gParam = ggglobalKernGradient_X(kern, outX, latX, dLdKyu, dLdKuu)
 kernLat = kern.template.latent;
 kernOut = kern.template.output;
 
-%We assume that each latent input has the same number of inducing points
+% We assume that each latent input has the same number of inducing points
 width = length(latX{1}(:));
 gParam = zeros(1,kern.nlf*width);
 
@@ -18,12 +18,13 @@ for k = 1:kern.nlf,
 end
 
 % Requires: dLdKyu
-for i = 1:kern.nout,
-    kernOut.precisionG = kern.precisionG(i);
-    for j = 1:kern.nlf,
-        kernOut.precisionU = kern.precisionU(j);
-        kernLat.precisionU = kern.precisionU(j);
-        g = ggXgaussianKernGradient_X(kernOut, kernLat, outX{i}, latX{j}, dLdKyu{i,j});
-        gParam(1,1+(j-1)*width:j*width) = gParam(1,1+(j-1)*width:j*width) + g;
+for d = 1:kern.nout,
+    kernOut.precisionG = kern.precisionG(d);
+    for q = 1:kern.nlf,
+        kernOut.precisionU = kern.precisionU(q);
+        kernLat.precisionU = kern.precisionU(q);
+        g = ggXgaussianKernGradient_X(kernOut, kernLat, outX{d}, latX{q}, dLdKyu{d,q});
+        index = 1+(q-1)*width:q*width;
+        gParam(1,index) = gParam(1,index) + g;
     end
 end

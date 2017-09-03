@@ -18,6 +18,7 @@ function [mae, mse, smse, msll, correl] = multigpErrorMeasures(y, yTest, mu, var
 % RETURN msll : mean standardized log loss
 %
 % COPYRIGHT : Mauricio A. Alvarez, 2010
+% MODIFICATIONS: Cristian Guarnizo, 2017
 
 % MULTIGP
 
@@ -36,7 +37,7 @@ switch type
         for k = 1:nout,
             maerror = abs(yTest{k} - mu{k});
             mserror = (yTest{k} - mu{k}).^2;
-            std_mserror = mserror/var(yTest{k});
+            std_mserror = mserror/var(yTest{k},1);
             sserror = ((yTest{k} - mu{k}).^2)./(2*varsigma{k});
             logprob = 0.5*log(2*pi.*varsigma{k}) + sserror - 0.5*log(2*pi.*var(y{k}))...
                 - ((yTest{k} - mean(y{k})).^2)./(2*var(y{k}));
@@ -53,10 +54,10 @@ switch type
         yTestVec = cell2mat(yTest);
         muVec = cell2mat(mu);
         varsigmaVec = cell2mat(varsigma);
-        globalGaussian = true;        
+        globalGaussian = true;
         if globalGaussian
             meanyTrain = mean(yVec);
-            varyTrain = var(yVec);           
+            varyTrain = var(yVec);
         else
             meanyTrain = zeros(length(yTestVec),1);
             varyTrain = zeros(length(yTestVec),1);

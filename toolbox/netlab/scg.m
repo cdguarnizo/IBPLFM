@@ -52,13 +52,13 @@ function [x, options, flog, pointlog, scalelog] = scg(f, x, options, gradf, vara
 
 %  Set up the options.
 if length(options) < 18
-  error('Options vector too short')
+    error('Options vector too short')
 end
 
 if(options(14))
-  niters = options(14);
+    niters = options(14);
 else
-  niters = 100;
+    niters = 100;
 end
 
 display = options(1);
@@ -72,7 +72,7 @@ nparams = length(x);
 
 %  Check gradients
 if (gradcheck)
-  feval('gradchek', x, f, gradf, varargin{:});
+    feval('gradchek', x, f, gradf, varargin{:});
 end
 
 sigma0 = 1.0e-4;
@@ -90,119 +90,119 @@ betamin = 1.0e-15; 			% Lower bound on scale.
 betamax = 1.0e100;			% Upper bound on scale.
 j = 1;					% j counts number of iterations.
 if nargout >= 3
-  flog(j, :) = fold;
-  if nargout == 4
-    pointlog(j, :) = x;
-  end
+    flog(j, :) = fold;
+    if nargout == 4
+        pointlog(j, :) = x;
+    end
 end
 
 % Main optimization loop.
 while (j <= niters)
-
-  % Calculate first and second directional derivatives.
-  if (success == 1)
-    mu = d*gradnew';
-    if (mu >= 0)
-      d = - gradnew;
-      mu = d*gradnew';
-    end
-    kappa = d*d';
-    if kappa < eps
-      options(8) = fnow;
-      return
-    end
-    sigma = sigma0/sqrt(kappa);
-    xplus = x + sigma*d;
-    gplus = feval(gradf, xplus, varargin{:});
-    options(11) = options(11) + 1; 
-    theta = (d*(gplus' - gradnew'))/sigma;
-  end
-
-  % Increase effective curvature and evaluate step size alpha.
-  delta = theta + beta*kappa;
-  if (delta <= 0) 
-    delta = beta*kappa;
-    beta = beta - theta/kappa;
-  end
-  alpha = - mu/delta;
-  
-  % Calculate the comparison ratio.
-  xnew = x + alpha*d;
-  fnew = feval(f, xnew, varargin{:});
-  options(10) = options(10) + 1;
-  Delta = 2*(fnew - fold)/(alpha*mu);
-  if (Delta  >= 0)
-    success = 1;
-    nsuccess = nsuccess + 1;
-    x = xnew;
-    fnow = fnew;
-  else
-    success = 0;
-    fnow = fold;
-  end
-
-  if nargout >= 3
-    % Store relevant variables
-    flog(j) = fnow;		% Current function value
-    if nargout >= 4
-      pointlog(j,:) = x;	% Current position
-      if nargout >= 5
-	scalelog(j) = beta;	% Current scale parameter
-      end
-    end
-  end    
-  if display > 0
-    fprintf(1, 'Cycle %4d  Error %11.6f  Scale %e\n', j, fnow, beta);
-  end
-
-  if (success == 1)
-    % Test for termination
-
-    if (max(abs(alpha*d)) < options(2) & max(abs(fnew-fold)) < options(3))
-      options(8) = fnew;
-      return;
-
-    else
-      % Update variables for new position
-      fold = fnew;
-      gradold = gradnew;
-      gradnew = feval(gradf, x, varargin{:});
-      options(11) = options(11) + 1;
-      % If the gradient is zero then we are done.
-      if (gradnew*gradnew' == 0)
-	options(8) = fnew;
-	return;
-      end
-    end
-  end
-
-  % Adjust beta according to comparison ratio.
-  if (Delta < 0.25)
-    beta = min(4.0*beta, betamax);
-  end
-  if (Delta > 0.75)
-    beta = max(0.5*beta, betamin);
-  end
-
-  % Update search direction using Polak-Ribiere formula, or re-start 
-  % in direction of negative gradient after nparams steps.
-  if (nsuccess == nparams)
-    d = -gradnew;
-    nsuccess = 0;
-  else
+    
+    % Calculate first and second directional derivatives.
     if (success == 1)
-      gamma = (gradold - gradnew)*gradnew'/(mu);
-      d = gamma*d - gradnew;
+        mu = d*gradnew';
+        if (mu >= 0)
+            d = - gradnew;
+            mu = d*gradnew';
+        end
+        kappa = d*d';
+        if kappa < eps
+            options(8) = fnow;
+            return
+        end
+        sigma = sigma0/sqrt(kappa);
+        xplus = x + sigma*d;
+        gplus = feval(gradf, xplus, varargin{:});
+        options(11) = options(11) + 1;
+        theta = (d*(gplus' - gradnew'))/sigma;
     end
-  end
-  j = j + 1;
+    
+    % Increase effective curvature and evaluate step size alpha.
+    delta = theta + beta*kappa;
+    if (delta <= 0)
+        delta = beta*kappa;
+        beta = beta - theta/kappa;
+    end
+    alpha = - mu/delta;
+    
+    % Calculate the comparison ratio.
+    xnew = x + alpha*d;
+    fnew = feval(f, xnew, varargin{:});
+    options(10) = options(10) + 1;
+    Delta = 2*(fnew - fold)/(alpha*mu);
+    if (Delta  >= 0)
+        success = 1;
+        nsuccess = nsuccess + 1;
+        x = xnew;
+        fnow = fnew;
+    else
+        success = 0;
+        fnow = fold;
+    end
+    
+    if nargout >= 3
+        % Store relevant variables
+        flog(j) = fnow;		% Current function value
+        if nargout >= 4
+            pointlog(j,:) = x;	% Current position
+            if nargout >= 5
+                scalelog(j) = beta;	% Current scale parameter
+            end
+        end
+    end
+    if display > 0
+        fprintf(1, 'Cycle %4d  Error %11.6f  Scale %e\n', j, fnow, beta);
+    end
+    
+    if (success == 1)
+        % Test for termination
+        
+        if (max(abs(alpha*d)) < options(2) & max(abs(fnew-fold)) < options(3))
+            options(8) = fnew;
+            return;
+            
+        else
+            % Update variables for new position
+            fold = fnew;
+            gradold = gradnew;
+            gradnew = feval(gradf, x, varargin{:});
+            options(11) = options(11) + 1;
+            % If the gradient is zero then we are done.
+            if (gradnew*gradnew' == 0)
+                options(8) = fnew;
+                return;
+            end
+        end
+    end
+    
+    % Adjust beta according to comparison ratio.
+    if (Delta < 0.25)
+        beta = min(4.0*beta, betamax);
+    end
+    if (Delta > 0.75)
+        beta = max(0.5*beta, betamin);
+    end
+    
+    % Update search direction using Polak-Ribiere formula, or re-start
+    % in direction of negative gradient after nparams steps.
+    if (nsuccess == nparams)
+        d = -gradnew;
+        nsuccess = 0;
+    else
+        if (success == 1)
+            gamma = (gradold - gradnew)*gradnew'/(mu);
+            d = gamma*d - gradnew;
+        end
+    end
+    j = j + 1;
 end
 
-% If we get here, then we haven't terminated in the given number of 
+% If we get here, then we haven't terminated in the given number of
 % iterations.
 
 options(8) = fold;
 if (options(1) >= 0)
-  disp('Warning: Maximum number of iterations has been exceeded');
+    disp('Warning: Maximum number of iterations has been exceeded');
 end
 

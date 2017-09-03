@@ -25,72 +25,68 @@ end
 
 %% Lowerbound terms realted to u and data
 if model.isVarU,
+    temp = blkdiag(model.Kuuinv{:})*cell2mat(model.Euuast)*blkdiag(model.Kuuinv{:});
+    temp = mat2cell(temp, model.sizeXu, model.sizeXu);
     for q = 1:model.nlf,
+        indq = model.indXu==q;
         mq = 0;
         Pqq = 0;
         for d = 1:model.nout,
-            mq = mq + EZS(d,q)*model.beta(d)*(model.Kfu{d,q}.'*model.m{d});
-            Pqq = Pqq + EZS2(d,q)*model.beta(d)*(model.Kfu{d,q}.'*model.Kfu{d,q});
+            mq = mq + (EZS(d,q)*model.beta(d))*model.Psi1{d,q};
+            Pqq = Pqq + EZS2(d,q)*model.beta(d)*(model.Psi2{d}(indq,indq));
         end
         
         % Add trace \sum mq E[uq]
-        %mq = Kuuinv*mq
         mq = model.Kuuinv{q}*mq;
-        f = f + trace(mq*model.Euast{q}.');
-        
-        Pqq = model.Kuuinv{q}*Pqq*model.Kuuinv{q};
-        Euuast = model.Kuuast{q} + model.Euast{q}*model.Euast{q}.';
+        f = f + mq.'*model.Euast{q};
         
         % Add \sum Kuquqinv Euuast
-        %f = f - 0.5*trace(model.Kuuinv{q}*(model.Kuuast{q} + model.Euast{q}*model.Euast{q}.'));
-        f = f - 0.5*trace(model.Kuuinv{q}*Euuast);
+        f = f - 0.5*sum(sum(model.Kuuinv{q}'.*model.Euuast{q,q}));
 
         % Add trace \sum \sum Pqq E[uq uq]
-        f = f - 0.5*trace(Pqq*Euuast);
+        f = f - 0.5*sum(sum(Pqq.'.*temp{q,q}));
         k = 1:model.nlf;
         k(q) = [];
         for qp = k,
+            indqp = model.indXu==qp;
             Pqqp = 0;
             for d = 1:model.nout,
-                Pqqp = Pqqp + (EZS(d,q)*EZS(d,qp)*model.beta(d))*(model.Kfu{d,q}.'*model.Kfu{d,qp});
+                Pqqp = Pqqp + (EZS(d,q)*EZS(d,qp)*model.beta(d))*model.Psi2{d}(indq,indqp);
             end
-            Pqqp = model.Kuuinv{q}*Pqqp*model.Kuuinv{qp};
             % Add trace \sum \sum Pqq' E[uq' uq]
-            f = f - 0.5*trace(Pqqp*(model.Euast{qp}*model.Euast{q}.'));
+            f = f - 0.5*sum(sum( Pqqp.'.*temp{qp,q} ));
         end
-        % Entropy H(u)
-        f = f + 0.5*logdet(model.Kuuast{q}) + 0.5*model.k;
     end
+    % Entropy H(u)
+    % TODO: check this
+    f = f + 0.5*(model.logDetKuuast + model.k*model.nlf);
+    
     % Add logdet Kuu
     f = f - 0.5*sum(model.logDetKuu);
     % Add \sum \sum cdq
     f = f - 0.5*sum(sum( model.cdq.*EZS2 ));
 else
     % Lower bound terms related to u
-    f = f + .5*( (model.m2'*(model.A\model.m2)) - model.logDetA + sum(model.logDetKuu)... 
-       - sum(sum( model.cdq.*model.etadq )) );
-        
-%      f = f + .5*( sum(model.sqrtAinvm.*model.sqrtAinvm) - model.logDetA + sum(model.logDetKuu)... 
-%         - sum(sum( model.cdq.*model.etadq )) );
-
-%     %% As Mauricio did
-%     f = -sum(model.sizeX)*log(2*pi);
-%     f = f - model.logDetDT; % contribution of ln det D
-%     f = f - model.traceDinvyy; % contribution of trace(inv D yy')
-%     f = f + sum(model.logDetKuu); % contribution of ln det Kuu
-%     f = f - model.logDetA; % contribution of ln det A
-%     for k = 1:model.nlf, % contribution of trace(invD Kyu invA Kuy invD yy')
-%         f = f + sum(model.sqrtAinvKuyDinvy{k}.*model.sqrtAinvKuyDinvy{k});
-%     end
-%     f = f - model.KtildeT; % Only meaningful if the approximation is DTCVAR
-%     f = 0.5*f;
+    Lainvm = model.Lainv'*model.m2;
+    f = f + .5*( (Lainvm'*Lainvm) - model.logDetA + sum(model.logDetKuu)... 
+       - sum( sum( model.cdq.*model.etadq )) );
 end
 
 %% Lower Bound terms related to data
+% Add
+f = f - 0.5*sum(model.sizeX)*log(2*pi);
 % Add 0.5 log Sigma_w
 f = f + 0.5*sum(model.sizeX.*log(model.beta));
 % Add trace (Sigma_w yy^{\top})
-f = f - 0.5*sum(model.beta(model.indX)'.*cell2mat(model.m).^2);
+if isfield(model,'UseMeanConstants') && model.UseMeanConstants,
+    for d = 1:model.nout,
+        f = f - 0.5*model.beta(d)*(sum((model.m{d}).^2) + model.sizeX(d)*model.mu(d).^2);
+    end
+else
+    for d = 1:model.nout,
+        f = f - 0.5*model.beta(d)*sum(model.m{d}.^2);
+    end
+end
 
 if model.isVarS,
     %% Lowerbound terms related to spikes and slab prior
@@ -125,7 +121,7 @@ if model.isVarS,
     %% Lowerbound terms related to Gamma distribution
     if model.gammaPrior,
         % Add \sum \sum log Gamma(adq)
-        f = f - sum(sum(log(gamma(model.adq))));
+        f = f - sum(sum(gammaln(model.adq)));
         % Add \sum \sum adq log bdq
         f = f + sum(sum( model.adq.*log(model.bdq)));
         % Add \sum \sum (adq - 1)[psi(adqast) - log (bdqast)]
@@ -187,7 +183,7 @@ if model.Trainvar,
         HSZ = sum(sum(tmp));
         
         if model.isVarS,
-            HSZ = HSZ + sum(sum(0.5*model.etadq.*(log(2*pi*exp(1)*model.varSdq + (model.varSdq(:)==0.) ) )));
+            HSZ = HSZ + sum(sum(0.5*model.etadq.*(log(2*pi*exp(1)*model.varSdq + (model.varSdq==0.) ) )));
         end
         
         f = f + HSZ;
@@ -199,15 +195,15 @@ end
 
 if strcmp(model.sparsePriorType,'ibp'),
     % Entroy H(upsilon) - Infinite or H(pi) for Finite
-    Hupsi = sum( log((gamma(model.tau1).*gamma(model.tau2))./gamma(model.tau1+model.tau2)) ...
+    Hupsi = sum( gammaln(model.tau1) + gammaln(model.tau2) - gammaln(model.tau1+model.tau2) ...
         - (model.tau1 - 1).*psi(model.tau1) - (model.tau2 - 1).*psi(model.tau2) ...
-        + (model.tau1 + model.tau2 - 2).*psi(model.tau1+model.tau2));
+        + (model.tau1 + model.tau2 - 2).*psi(model.tau1+model.tau2) );
     f = f + Hupsi;
 end
 
 %% Entropy H(gamma)
 if model.gammaPrior && model.isVarS,
-    Hgamma = sum(sum(log(gamma(model.adqast)) - (model.adqast-1).*psi(model.adqast) ...
+    Hgamma = sum(sum( gammaln(model.adqast) - (model.adqast-1).*psi(model.adqast) ...
         - log(model.bdqast) + model.adqast));
     f = f + Hgamma;
 end
