@@ -20,7 +20,7 @@ Progress in Pattern Recognition, Image Analysis, Computer Vision, and Applicatio
 Available at: http://link.springer.com/chapter/10.1007%2F978-3-319-25751-8_76
 
 ### Note
-The spike and slab prior, and its variational variables were dropped out, in order to achieve a tighter lower bound and to reduce the initilization sensitivity.
+The spike and slab prior, and its variational variables were dropped out, in order to achieve a tighter lower bound and to reduce the initialization sensitivity.
 
 #### Acknowledgements
 
