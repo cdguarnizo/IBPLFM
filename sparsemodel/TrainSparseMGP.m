@@ -1,6 +1,6 @@
 function [model, Fold] = TrainSparseMGP(y, x, options)
 
-addpath(genpath('../toolbox'),'../globalkern','../utils','../ftcmgp');
+addpath(genpath('../toolbox'),'../globalkern','../utils');
 
 options.gamma = exp(-2);
 options.kern.isVarS = options.isVarS;

@@ -48,26 +48,8 @@ clear fd t
 
 % Set model Options 
 options = ibpmultigpOptions('dtcvar');
-options.sparsePriorType = 'ibp';
 options.kernType = 'lfm';
 options.optimiser = 'scg';
-
-options.isVarS = false; %If ARD or SpikeSlab this should be true
-options.gammaPrior = false;
-options.InitSearchS = false;
-
-options.fixinducing = true;
-options.Trainkern = true;
-options.InitKern = true;
-options.debug = false;
-
-options.sorteta = true; %If ARD then this should be false
-options.isVarU = true;
-options.OptMarU = true;
-options.IBPisInfinite = true;
-options.Opteta = false;
-options.force_posUpdate = false;
-options.UseMeanConstants = false;
 
 options.nlf = 6;
 options.numActive = 25;
