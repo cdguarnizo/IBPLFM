@@ -49,7 +49,7 @@ clear fd t
 % Set model Options 
 options = ibpmultigpOptions('dtcvar');
 options.sparsePriorType = 'ibp';
-options.kernType = 'lfm';
+options.kernType = 'icm';
 options.optimiser = 'scg';
 
 options.nlf = 6;
@@ -74,7 +74,7 @@ Ni = 10;
 LBres = zeros(Ni,1);
 K = zeros(Ni,1);
 
-parfor con = 1:Ni,
+for con = 1:Ni,
     s = RandStream('mt19937ar', 'Seed', seeds(con));
     RandStream.setGlobalStream(s);
     [model, ll] = TrainSparseMGP(y, x, options);
@@ -88,8 +88,9 @@ load('temp/res.mat');
 [~, R] = max(LBres(:));
 load(strcat('temp/m',num2str(R),'.mat'));
 
-etadq = zeros(size(model.etadq));
-etadq = model.etadq(:,1:R);
+%etadq = zeros(size(model.etadq));
+etadq = model.etadq(:,1:K(R));
+model.nlf = K(R);
 model.etadq = etadq;
 
 [ymean, yvar] = ibpmultigpPosterior(model, xT);

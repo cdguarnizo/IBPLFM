@@ -1,6 +1,6 @@
-function [Kff, Kfu, Kuu] = simglobalKernCompute(kern, outX, latX, gamma)
+function [Kff, Kfu, Kuu] = icmglobalKernCompute(kern, outX, latX, gamma)
 
-% SIMGLOBALKERNCOMPUTE
+% ICMGLOBALKERNCOMPUTE
 %
 % COPYRIGTH : Mauricio A. Alvarez, 2013.
 % MODIFICATIONS: Cristian Guarnizo, 2014.
@@ -21,11 +21,15 @@ if strcmp(kern.approx,'ftc'),
             kernOut.inverseWidth = kern.inverseWidth(q);
             kernOut2.inverseWidth = kern.inverseWidth(q);
             for d = 1:kern.nout,
-                kernOut.decay = kern.decay(d);
+                kernOut.mass = kern.mass(d);
+                kernOut.damper = kern.damper(d);
+                kernOut.spring = kern.spring(d);
                 kernOut.sensitivity = kern.sensitivity(d,q);
                 Kfft{d,d} = real(kern.funcNames.computeOut(kernOut, outX{d}));
                 for dp = d+1:kern.nout,
-                    kernOut2.decay = kern.decay(dp);
+                    kernOut2.mass = kern.mass(dp);
+                    kernOut2.damper = kern.damper(dp);
+                    kernOut2.spring = kern.spring(dp);
                     kernOut2.sensitivity = kern.sensitivity(dp,q);
                     Kfft{d,dp} = real(kern.funcNames.computeCrossOut(kernOut, kernOut2, outX{d}, outX{dp}));
                     Kfft{dp,d} = Kfft{d,dp}.';
@@ -43,12 +47,18 @@ if strcmp(kern.approx,'ftc'),
             kernOut.inverseWidth = kern.inverseWidth(q);
             kernOut2.inverseWidth = kern.inverseWidth(q);
             for d = 1:kern.nout,
-                kernOut.decay = kern.decay(d);
+                kernOut.mass = kern.mass(d);
+                kernOut.damper = kern.damper(d);
+                kernOut.spring = kern.spring(d);
                 kernOut.sensitivity = kern.sensitivity(d,q);
-                for dp = 1:kern.nout,
-                    kernOut2.decay = kern.decay(dp);
+                Kfft{d,d} = real(kern.funcNames.computeOut(kernOut, outX{d}, latX{d}));
+                for dp = d+1:kern.nout,
+                    kernOut2.mass = kern.mass(dp);
+                    kernOut2.damper = kern.damper(dp);
+                    kernOut2.spring = kern.spring(dp);
                     kernOut2.sensitivity = kern.sensitivity(dp,q);
                     Kfft{d,dp} = real(kern.funcNames.computeCross(kernOut, kernOut2, outX{d}, latX{dp}));
+                    Kfft{dp,d} = Kfft{d,dp}.';
                 end
             end
             Kff{q} = cell2mat(Kfft);
@@ -62,39 +72,33 @@ else
     Kff = cell(kern.nout, kern.nlf);
     
     kernLat = kern.template.latent;
-    kernLat.isNegativeS = true;
-    kernOut = kern.template.output;
-    kernOut.isNegativeS = true;
+    
     % Compute Kuu -> rbf kernel
     for k = 1:kern.nlf,
         % First we need to expand the parameters in the vector to the local
         % kernel
         kernLat.inverseWidth = kern.inverseWidth(k);
-        Kuu{k} = real(kern.funcNames.computeLat(kernLat, latX{k}));
-        if ~isempty(gamma),
+        Kuu{k} = rbfKernCompute(kernLat, latX{k});
+        if ~isempty(gamma) %Ask Mauricio about this conditional
             Kuu{k} = Kuu{k} + gamma(k)*eye(size(Kuu{k}));
         end
     end
-
     for d = 1:kern.nout,
         %Here expand spring and damper
-        kernOut.decay = kern.decay(d);
-        for q = 1:kern.nlf,
-            kernOut.sensitivity = kern.sensitivity(d,q);
+        for q = 1: kern.nlf,
             % Expand the parameter inverseWidth
-            kernOut.inverseWidth = kern.inverseWidth(q);
-            kernLat.inverseWidth = kern.inverseWidth(q);
-            % Compute Kff
-            Kff{d,q} = real(kern.funcNames.computeOut(kernOut, outX{d}));
+            kernLat.inverseWidth =  kern.inverseWidth(q);
+            % Compute diag of Kff
+            Kff{d,q} = kern.sensitivity(d,q)^2*rbfKernDiagCompute(kernLat, outX{d});
             
-            if any(isinf(Kff{d,q})) | any(isnan(Kff{d,q})),
+            if any(isnan(Kff{d,q})) | any(isinf(Kff{d,q})),
                 error('Nan or Inf in Kff')
             end
             
-            % Compute Kfu, which corresponds to K_{\hat{f}}u
-            Kfu{d,q} = real(kern.funcNames.computeCross(kernOut, kernLat, outX{d}, latX{q}));
+            % Compute Kfu, which corresponds to K_{\hat{f}}u, really.
+            Kfu{d,q} = kern.sensitivity(d,q)*rbfKernCompute(kernLat, outX{d}, latX{q});
             
-            if any(isinf(Kfu{d,q})) | any(isnan(Kfu{d,q})),
+            if any(isnan(Kfu{d,q})) | any(isinf(Kfu{d,q})),
                 error('Nan or Inf in Kfu')
             end
         end

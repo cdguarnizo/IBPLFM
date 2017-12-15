@@ -1,4 +1,4 @@
-function [xvals, yvals, color] = hintmat(w);
+function [xvals, yvals, color] = hintmat(w)
 %HINTMAT Evaluates the coordinates of the patches for a Hinton diagram.
 %
 %	Description

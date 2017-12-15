@@ -194,19 +194,24 @@ if isfield(options,'PosS') && options.PosS,
     kern.options.PosS = options.PosS;
 end
 
-%kern.options.order = options.kern.order;
-kern = kernParamInit(kern);
-kernType = multigpKernComposer(options.kernType, 1, 1, model.approx, 1, options);
-kern.template.latent = kernCreate(localX{1}, kernType{2});
-kern.template.output = kernCreate(localX{2}, kernType{3});
-kern.funcNames.computeLat = str2func([kernType{2}{3}  'KernCompute']);
-kern.funcNames.computeOut = str2func([kernType{3}{3}  'KernDiagCompute']);
-kern.funcNames.computeCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernCompute']);
-kern.funcNames.gradientLat = str2func([kernType{2}{3} 'KernGradient']);
-kern.funcNames.gradientOut = str2func([kernType{3}{3} 'KernDiagGradient']);
-kern.funcNames.gradientCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernGradient']);
-kern.funcNames.extractLat = str2func([kernType{2}{3} 'KernExtractParam']);
-kern.funcNames.extractOut = str2func([kernType{3}{3} 'KernExtractParam']);
+if strcmp(options.kernType,'icm'),
+    kern = kernParamInit(kern);
+    kern.template.latent = kernCreate(localX{1}, 'rbf');
+else
+    %kern.options.order = options.kern.order;
+    kern = kernParamInit(kern);
+    kernType = multigpKernComposer(options.kernType, 1, 1, model.approx, 1, options);
+    kern.template.latent = kernCreate(localX{1}, kernType{2});
+    kern.template.output = kernCreate(localX{2}, kernType{3});
+    kern.funcNames.computeLat = str2func([kernType{2}{3}  'KernCompute']);
+    kern.funcNames.computeOut = str2func([kernType{3}{3}  'KernDiagCompute']);
+    kern.funcNames.computeCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernCompute']);
+    kern.funcNames.gradientLat = str2func([kernType{2}{3} 'KernGradient']);
+    kern.funcNames.gradientOut = str2func([kernType{3}{3} 'KernDiagGradient']);
+    kern.funcNames.gradientCross = str2func([kernType{3}{3} 'X' kernType{2}{3} 'KernGradient']);
+    kern.funcNames.extractLat = str2func([kernType{2}{3} 'KernExtractParam']);
+    kern.funcNames.extractOut = str2func([kernType{3}{3} 'KernExtractParam']);
+end
 model.kern = kern;
 model.kern.isVarS = options.isVarS;
 model.kernType = kern.type;
