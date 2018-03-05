@@ -6,7 +6,7 @@ This code uses GPmat framework to calculate covariance functions
 from Latent Force Models (LFMs).
 
 By means of the Indian Buffet Process Prior it is posible to automatically
-select the number of latent functions required to descried output data.
+select the number of latent functions required to describe output data.
 Additionally, the structure that represents the interconnection between
 outputs and latent inputs is learned as well.
 
