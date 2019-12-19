@@ -11,7 +11,7 @@ Additionally, the structure that represents the interconnection between
 outputs and latent inputs is learned as well.
 
 <p align="center">
-<img align="middle" src="./tmp/scheme.png" width="400" />
+<img align="middle" src="./tmp/scheme.png" width="600" />
 </p>
 
 ### Update
