@@ -10,6 +10,11 @@ select the number of latent functions required to describe output data.
 Additionally, the structure that represents the interconnection between
 outputs and latent inputs is learned as well.
 
+<p align="center">
+<img align="middle" src="./tmp/scheme.png" width="800" />
+</p>
+
+
 The code is based in the following documents:
 
 C. Guarnizo and M. A. Álvarez, "Indian Buffet process for model selection in convolved multiple-output Gaussian processes",
