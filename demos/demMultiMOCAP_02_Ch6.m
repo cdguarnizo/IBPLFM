@@ -15,7 +15,7 @@ fd = amc_to_matrix('../datasets/CMUmocap/02_03.amc');
 % 8 signals test
 names = {'rhumerus','rradius','rfemur','lhumerus','lradius','lfemur'};
 IndSel = [27,30,49,39,42,56];
-
+name = 'MOCAP';
 outs = [1,4];
 nout = length(outs);
 fd = fd(:,IndSel);
@@ -32,12 +32,12 @@ y = cell(D,1);
 x = cell(D,1);
 xT = cell(D,1);
 yT = cell(D,1);
-for d = 1:D,
+for d = 1:D
     y{d} = fd(IndDown, d);
     x{d} = t(IndDown);
     yT{d} = y{d};
     xT{d} = x{d};
-    if any(d == outs),
+    if any(d == outs)
         ind = find(outs==d);
         y{d}(test_ind{ind}) = [];
         x{d}(test_ind{ind}) = [];
@@ -49,7 +49,7 @@ clear fd t
 % Set model Options 
 options = ibpmultigpOptions('dtcvar');
 options.sparsePriorType = 'ibp';
-options.kernType = 'icm';
+options.kernType = 'lfm';
 options.optimiser = 'scg';
 
 options.nlf = 6;
@@ -62,7 +62,7 @@ options.beta = 1e-2;
 
 options.Z = ones(D,6);
 
-for d = 1:D,
+for d = 1:D
     options.bias(d) = yT{d}(1);
     options.scale(d) = std(yT{d});
 end
@@ -74,31 +74,44 @@ Ni = 10;
 LBres = zeros(Ni,1);
 K = zeros(Ni,1);
 
-for con = 1:Ni,
-    s = RandStream('mt19937ar', 'Seed', seeds(con));
+parfor r = 1:Ni
+    s = RandStream('mt19937ar', 'Seed', seeds(r));
     RandStream.setGlobalStream(s);
     [model, ll] = TrainSparseMGP(y, x, options);
-    LBres(con,:) = ll(end);
-    K(con) = sum(sum(round(model.etadq))>=1);
-    savemodel(model,con);
+    LBres(r,:) = ll(end);
+    K(r) = sum(sum(round(model.etadq))>=1);
+    ZT(r,:) = model.etadq(:)';
+    ST(r,:) = model.kern.sensitivity(:)';
+    savemodel(model,r,name);
 end
-save('temp/res.mat','K','LBres');
-%% Plot results from the selected solution
-load('temp/res.mat');
-[~, R] = max(LBres(:));
-load(strcat('temp/m',num2str(R),'.mat'));
 
-%etadq = zeros(size(model.etadq));
-etadq = model.etadq(:,1:K(R));
-model.nlf = K(R);
-model.etadq = etadq;
+K2 = zeros(1,10);
+for r = 1:10
+    Ztemp = reshape(ZT(r,:), D, options.nlf);
+    Stemp = reshape(ST(r,:), D, options.nlf);
+    tempZ = find(sum(abs(Ztemp) >= 3e-1) >= 1);
+    tempS = find(sum(abs(Stemp) >= 1e-1) >= 1);
+    temp = intersect(tempZ, tempS);
+    K2(r) = length(temp);
+end
+
+save(strcat('temp/',name,'.mat'),'K','LBres','K','K2','ZT','ST','options');
+
+%% Plot results from the selected solution
+load(strcat('temp/',name,'.mat'));
+[~, R] = max(LBres(:));
+load(strcat('temp/',name,num2str(R),'.mat'));
+
+etadq = zeros(size(model.etadq));
+etadq(:,1:K(R)) = model.etadq(:,1:K(R));
+model.etadq = round(etadq);
 
 [ymean, yvar] = ibpmultigpPosterior(model, xT);
 
 nmse = zeros(1,nout);
 nlpd = zeros(1,nout);
 fprintf('Best solution performance per output\n');
-for k = 1:nout,
+for k = 1:nout
     d = outs(k);
     ytest = yT{d}(test_ind{k});
     xtest = xT{d}(test_ind{k});
@@ -115,4 +128,3 @@ for k = 1:nout,
 end
 %Plot hinton diagram
 hinton(model.kern.sensitivity(:,1:K(R)));
-

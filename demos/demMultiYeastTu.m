@@ -10,6 +10,7 @@ format short e
 addpath('../sparsemodel','../globalkern',genpath('../toolbox'),'../utils')
 
 % Yeast data from TU
+name = 'yeast';
 load ../datasets/Yeast/Tudata_G8.mat
 names = {'YLR183C','YLR030W','TKL2','YOR359W','PFK27','RPL17B','RPS16B', ...
     'RPL13A'}; 
@@ -25,12 +26,12 @@ y = cell(D,1);
 x = cell(D,1);
 xT = cell(D,1);
 yT = cell(D,1);
-for d = 1:D,
+for d = 1:D
     y{d} = f(d,:)';
     x{d} = t(d,:)';
     yT{d} = y{d};
     xT{d} = x{d};
-    if any(d == outs),
+    if any(d == outs)
         ind = find(d==outs);
         y{d}(test_ind{ind}) = [];
         x{d}(test_ind{ind}) = [];
@@ -51,7 +52,7 @@ options.NIO = 20;
 options.DispOpt = 0;
 options.beta = 1e-2;
 
-for d= 1:D,
+for d = 1:D
     options.bias(d) = mean(yT{d});
     options.scale(d) = std(yT{d});
 end
@@ -63,19 +64,32 @@ Ni = 10;
 LBres = zeros(Ni,1);
 K = zeros(Ni,1);
 
-parfor con = 1:Ni,
-    s = RandStream('mt19937ar', 'Seed', seeds(con));
+parfor r = 1:Ni
+    s = RandStream('mt19937ar', 'Seed', seeds(r));
     RandStream.setGlobalStream(s);
     [model, ll] = TrainSparseMGP(y, x, options);
-    LBres(con,:) = ll(end);
-    K(con) = sum(sum(round(model.etadq))>=1);
-    savemodel(model,con);
+    LBres(r,:) = ll(end);
+    ZT(r,:) = model.etadq(:)';
+    ST(r,:) = model.kern.sensitivity(:)';
+    K(r) = sum(sum(round(model.etadq))>=1);
+    savemodel(model,r,name);
 end
-save('temp/res.mat','K','LBres');
+
+K2 = zeros(1,10);
+for r = 1:10
+    Ztemp = reshape(ZT(r,:), D, options.nlf);
+    Stemp = reshape(ST(r,:), D, options.nlf);
+    tempZ = find(sum(abs(Ztemp) >= 3e-1) >= 1);
+    tempS = find(sum(abs(Stemp) >= 1e-1) >= 1);
+    temp = intersect(tempZ, tempS);
+    K2(r) = length(temp);
+end
+
+save(strcat('temp/',name),'K','K2','LBres','ZT','ST','options','name');
 %% Plot results from the selected solution
-load('temp/res.mat');
+load(strcat('temp/',name,'.mat'));
 [~, R] = max(LBres(:));
-load(strcat('temp/m',num2str(R),'.mat'));
+load(strcat('temp/',name,num2str(R),'.mat'));
 
 etadq = zeros(size(model.etadq));
 etadq(:,1:K(R)) = model.etadq(:,1:K(R));
@@ -86,7 +100,7 @@ model.etadq = etadq;
 nmse = zeros(1,nout);
 nlpd = zeros(1,nout);
 fprintf('Best solution performance per output\n');
-for k = 1:nout,
+for k = 1:nout
     d = outs(k);
     ytest = yT{d}(test_ind{k});
     xtest = xT{d}(test_ind{k});

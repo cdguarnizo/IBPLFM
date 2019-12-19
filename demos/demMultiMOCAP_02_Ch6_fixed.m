@@ -32,12 +32,12 @@ y = cell(D,1);
 x = cell(D,1);
 xT = cell(D,1);
 yT = cell(D,1);
-for d = 1:D,
+for d = 1:D
     y{d} = fd(IndDown, d);
     x{d} = t(IndDown);
     yT{d} = y{d};
     xT{d} = x{d};
-    if any(d == outs),
+    if any(d == outs)
         ind = find(outs==d);
         y{d}(test_ind{ind}) = [];
         x{d}(test_ind{ind}) = [];
@@ -48,8 +48,26 @@ clear fd t
 
 % Set model Options 
 options = ibpmultigpOptions('dtcvar');
+options.sparsePriorType = 'ibp';
 options.kernType = 'lfm';
 options.optimiser = 'scg';
+
+options.isVarS = false; %If ARD or SpikeSlab this should be true
+options.gammaPrior = false;
+options.InitSearchS = false;
+
+options.fixinducing = true;
+options.Trainkern = true;
+options.InitKern = true;
+options.debug = false;
+
+options.sorteta = true; %If ARD then this should be false
+options.isVarU = true;
+options.OptMarU = true;
+options.IBPisInfinite = true;
+options.Opteta = false;
+options.force_posUpdate = false;
+options.UseMeanConstants = false;
 
 options.nlf = 6;
 options.numActive = 25;
@@ -61,7 +79,7 @@ options.beta = 1e-2;
 
 options.Z = ones(D,6);
 
-for d = 1:D,
+for d = 1:D
     options.bias(d) = yT{d}(1);
     options.scale(d) = std(yT{d});
 end

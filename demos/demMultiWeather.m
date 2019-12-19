@@ -8,7 +8,9 @@ close all
 format short e
 
 addpath('../sparsemodel','../globalkern',genpath('../toolbox'),'../utils')
+
 % load data
+name = 'weather';
 load ../datasets/weather/weatherdata.mat
 D = size(y,1);
 
@@ -22,7 +24,7 @@ nout = length(outs);
 options = ibpmultigpOptions('dtcvar');
 options.kernType = 'gg';
 
-options.nlf = 6;
+options.nlf = 10;
 options.numActive = 200;
 options.alpha = 1;
 options.NI = 200;
@@ -37,22 +39,35 @@ Ni = 10;
 LBres = zeros(Ni,1);
 K = zeros(Ni,1);
 
-parfor con = 1:Ni,
-    s = RandStream('mt19937ar', 'Seed', seeds(con));
+parfor r = 1:Ni
+    s = RandStream('mt19937ar', 'Seed', seeds(r));
     RandStream.setGlobalStream(s);
     [model, ll] = TrainSparseMGP(y, x, options);
-    LBres(con,:) = ll(end);
-    K(con) = sum(sum(round(model.etadq))>=1);
-    savemodel(model,con);
+    LBres(r,:) = ll(end);
+    ZT(r,:) = model.etadq(:)';
+    ST(r,:) = model.kern.sensitivity(:)';
+    K(r) = sum(sum(round(model.etadq))>=1);
+    savemodel(model,r,name);
 end
-save('temp/res.mat','K','LBres');
-%% Plot results from the selected solution
-load('temp/res.mat');
-[~, R] = max(LBres(:));
-load(strcat('temp/m',num2str(R),'.mat'));
 
-etadq = zeros(size(model.etadq));
-etadq = model.etadq(:,1:R);
+K2 = zeros(1,10);
+for r = 1:10
+    Ztemp = reshape(ZT(r,:), D, options.nlf);
+    Stemp = reshape(ST(r,:), D, options.nlf);
+    tempZ = find(sum(abs(Ztemp) >= 3e-1) >= 1);
+    tempS = find(sum(abs(Stemp) >= 1e-1) >= 1);
+    temp = intersect(tempZ, tempS);
+    K2(r) = length(temp);
+end
+
+save(strcat('temp/',name),'K','K2','LBres','ZT','ST','options','name');
+
+%% Plot results from the selected solution
+load(strcat('temp/',name,'.mat'));
+[~, R] = max(LBres(:));
+load(strcat('temp/',name,num2str(R),'.mat'));
+
+etadq = round(model.etadq)
 model.etadq = etadq;
 
 [ymean, yvar] = ibpmultigpPosterior(model, xT);
@@ -60,7 +75,7 @@ model.etadq = etadq;
 nmse = zeros(1,nout);
 nlpd = zeros(1,nout);
 fprintf('Best solution performance per output\n');
-for k = 1:nout,
+for k = 1:nout
     d = outs(k);
     ytest = yT{d}(test_ind{k});
     xtest = xT{d}(test_ind{k});
@@ -76,4 +91,4 @@ for k = 1:nout,
     title(names{d})
 end
 %Plot hinton diagram
-hinton(model.kern.sensitivity(:,1:K(R)));
+hinton(model.etadq(:,1:K(R)).*model.kern.sensitivity(:,1:K(R)));
