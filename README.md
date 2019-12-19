@@ -15,7 +15,7 @@ outputs and latent inputs is learned as well.
 </p>
 
 ### Update
-In order to achieve a tighter lower bound and to reduce the initialization sensitivity, the "spike and slab" prior and its variational variables were dropped out.
+In order to achieve a tighter lower bound and to reduce the initialization sensitivity, the "spike and slab" prior and its variational variables were dropped out. We adopt this model as the default one.
 
 ### Demos
 There are four different demos. From each demo we can learn three diferent probablistic models (Defaut: Using IBP prior to model the inteconnection matrix, "fixed": without the IBP prior, "old": Combination of the Spike and Slab and IBP priors [1,2]) . <br>
